@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caveman Translator 🪨 — Why Use Many Word When Few Do Trick</title>
+<meta name="description" content="Translate verbose AI agent output into tight caveman-speak. Same meaning, 65% fewer tokens. Inspired by the 83K-star GitHub project.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --stone: #2a1f14;
+    --cave-bg: #0d0a07;
+    --cave-surface: #1a1410;
+    --cave-surface-2: #241c14;
+    --cave-border: #3a2e22;
+    --cave-border-light: #4a3e30;
+    --fire: #ff6b2b;
+    --fire-glow: #ff8c42;
+    --fire-hot: #ffaa33;
+    --ember: #cc4400;
+    --bone: #f5e6d3;
+    --bone-dim: #b8a592;
+    --bone-muted: #7a6b5c;
+    --moss: #5a8a3c;
+    --moss-light: #7ab356;
+    --sky-dark: #1a2744;
+    --water: #4a8fb8;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--cave-bg);
+    color: var(--bone);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient cave glow */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(255,107,43,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(204,68,0,0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    text-align: center;
+    padding: 48px 0 32px;
+    position: relative;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .rock-emoji {
+    font-size: 56px;
+    animation: rock-bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes rock-bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(-3deg); }
+    75% { transform: translateY(-3px) rotate(2deg); }
+  }
+
+  h1 {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--fire), var(--fire-hot), var(--bone));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    color: var(--bone-dim);
+    font-weight: 400;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+
+  .credit {
+    font-size: 13px;
+    color: var(--bone-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .credit a {
+    color: var(--fire);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .credit a:hover { text-decoration: underline; }
+
+  .star-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--cave-surface-2);
+    border: 1px solid var(--cave-border);
+    border-radius: 100px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fire-hot);
+  }
+
+  /* ===== STATS BAR ===== */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin: 24px 0 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -1px;
+  }
+
+  .stat-value.fire { color: var(--fire); }
+  .stat-value.moss { color: var(--moss-light); }
+  .stat-value.water { color: var(--water); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--bone-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* ===== MAIN GRID ===== */
+  .translator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .panel {
+    background: var(--cave-surface);
+    border: 1px solid var(--cave-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--cave-border);
+    background: var(--cave-surface-2);
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .icon { font-size: 16px; }
+  .panel.input .panel-title { color: var(--bone-dim); }
+  .panel.output .panel-title { color: var(--fire-glow); }
+
+  .token-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--cave-bg);
+    border: 1px solid var(--cave-border);
+  }
+
+  .token-count.original { color: var(--bone-dim); }
+  .token-count.caveman { color: var(--fire); }
+
+  .panel-body {
+    flex: 1;
+    padding: 0;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 280px;
+    padding: 18px;
+    border: none;
+    background: transparent;
+    color: var(--bone);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+  }
+
+  textarea::placeholder {
+    color: var(--bone-muted);
+    font-style: italic;
+  }
+
+  .output-text {
+    padding: 18px;
+    min-height: 280px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--bone);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .output-text.empty {
+    color: var(--bone-muted);
+    font-style: italic;
+  }
+
+  /* ===== CONTROLS ===== */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--cave-border);
+    background: var(--cave-surface-2);
+    color: var(--bone);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn:hover {
+    border-color: var(--cave-border-light);
+    background: var(--cave-border);
+  }
+
+  .btn-fire {
+    background: linear-gradient(135deg, var(--fire), var(--ember));
+    border-color: var(--fire);
+    color: white;
+    font-size: 16px;
+    padding: 14px 36px;
+    box-shadow: 0 4px 20px rgba(255,107,43,0.3);
+  }
+
+  .btn-fire:hover {
+    background: linear-gradient(135deg, var(--fire-glow), var(--fire));
+    box-shadow: 0 4px 30px rgba(255,107,43,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-fire:active { transform: translateY(0); }
+
+  .btn-fire.processing {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* ===== LEVEL SELECTOR ===== */
+  .level-section {
+    margin-bottom: 32px;
+  }
+
+  .level-section h3 {
+    text-align: center;
+    font-size: 13px;
+    color: var(--bone-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .levels {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .level {
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--cave-border);
+    background: var(--cave-surface);
+    color: var(--bone-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .level:hover {
+    border-color: var(--cave-border-light);
+    color: var(--bone);
+  }
+
+  .level.active {
+    border-color: var(--fire);
+    background: rgba(255,107,43,0.1);
+    color: var(--fire-glow);
+    box-shadow: 0 0 16px rgba(255,107,43,0.15);
+  }
+
+  .level small {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--bone-muted);
+    margin-top: 3px;
+  }
+
+  .level.active small { color: var(--fire); opacity: 0.7; }
+
+  /* ===== SAVINGS VISUALIZATION ===== */
+  .savings-bar-container {
+    margin: 24px auto 32px;
+    max-width: 600px;
+  }
+
+  .savings-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bone-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .savings-bar-track {
+    height: 28px;
+    background: var(--cave-surface-2);
+    border-radius: 100px;
+    overflow: hidden;
+    border: 1px solid var(--cave-border);
+    position: relative;
+  }
+
+  .savings-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--fire), var(--fire-hot));
+    border-radius: 100px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    min-width: 0;
+  }
+
+  .savings-bar-fill span {
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ===== EXAMPLES ===== */
+  .examples-section {
+    margin-bottom: 48px;
+  }
+
+  .examples-section h3 {
+    text-align: center;
+    font-size: 13px;
+    color: var(--bone-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .example-card {
+    background: var(--cave-surface);
+    border: 1px solid var(--cave-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .example-card:hover {
+    border-color: var(--fire);
+    background: var(--cave-surface-2);
+    transform: translateY(-1px);
+  }
+
+  .example-card strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fire-glow);
+    margin-bottom: 6px;
+  }
+
+  .example-card p {
+    font-size: 12px;
+    color: var(--bone-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 32px 0 48px;
+    border-top: 1px solid var(--cave-border);
+    color: var(--bone-muted);
+    font-size: 13px;
+  }
+
+  footer a {
+    color: var(--fire);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    h1 { font-size: 32px; }
+    .subtitle { font-size: 16px; }
+    .translator-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 20px; }
+    .stat-value { font-size: 24px; }
+    .levels { flex-direction: column; align-items: center; }
+    .level { width: 100%; max-width: 300px; }
+    .controls { flex-direction: column; }
+    .btn-fire { width: 100%; justify-content: center; }
+  }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 24px;
+    background: var(--cave-surface-2);
+    border: 1px solid var(--fire);
+    border-radius: var(--radius-sm);
+    color: var(--fire-glow);
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Animated fire particles (CSS only) */
+  .fire-particles {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-row">
+      <span class="rock-emoji">🪨</span>
+      <div>
+        <h1>Caveman Translator</h1>
+        <p class="subtitle">why use many word when few do trick</p>
+      </div>
+      <span class="rock-emoji">🔥</span>
+    </div>
+    <p class="credit">
+      Inspired by
+      <a href="https://github.com/JuliusBrussee/caveman" target="_blank">JuliusBrussee/caveman</a>
+      <span class="star-badge">⭐ 83K+</span>
+      — the #1 trending repo on GitHub
+    </p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value fire" id="savingsPercent">0%</div>
+      <div class="stat-label">Tokens Saved</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value moss" id="originalTokens">0</div>
+      <div class="stat-label">Original Tokens</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value water" id="cavemanTokens">0</div>
+      <div class="stat-label">Caveman Tokens</div>
+    </div>
+  </div>
+
+  <!-- Level Selector -->
+  <div class="level-section">
+    <h3>🪨 Pick Your Grunt Level</h3>
+    <div class="levels">
+      <div class="level" data-level="mild" onclick="setLevel('mild')">
+        🗿 Mild
+        <small>Just trim the fluff</small>
+      </div>
+      <div class="level active" data-level="medium" onclick="setLevel('medium')">
+        🪨 Medium
+        <small>Classic caveman (default)</small>
+      </div>
+      <div class="level" data-level="extreme" onclick="setLevel('extreme')">
+        🔥 Extreme
+        <small>Maximum grunt</small>
+      </div>
+      <div class="level" data-level="ooga" onclick="setLevel('ooga')">
+        💀 OOGA
+        <small>Barely comprehensible</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Translator -->
+  <div class="translator-grid">
+    <div class="panel input">
+      <div class="panel-header">
+        <span class="panel-title"><span class="icon">🗣️</span> Normal AI Talk</span>
+        <span class="token-count original" id="inputTokenCount">0 tokens</span>
+      </div>
+      <div class="panel-body">
+        <textarea id="inputText" placeholder="Paste your verbose AI agent output here...&#10;&#10;Example: &quot;I'd be happy to help you with that! The issue you're experiencing is most likely caused by your authentication middleware not properly validating the token expiry.&quot;"></textarea>
+      </div>
+    </div>
+    <div class="panel output">
+      <div class="panel-header">
+        <span class="panel-title"><span class="icon">🪨</span> Caveman Speak</span>
+        <span class="token-count caveman" id="outputTokenCount">0 tokens</span>
+      </div>
+      <div class="panel-body">
+        <div class="output-text empty" id="outputText">Caveman wait for words... 🪨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-fire btn" id="translateBtn" onclick="translate()">🪨 MAKE CAVEMAN</button>
+    <button class="btn" onclick="copyOutput()">📋 Copy</button>
+    <button class="btn" onclick="clearAll()">🗑 Clear</button>
+  </div>
+
+  <!-- Savings Bar -->
+  <div class="savings-bar-container">
+    <div class="savings-bar-label">
+      <span>Token Usage</span>
+      <span id="savingsLabel">Paste text to see savings</span>
+    </div>
+    <div class="savings-bar-track">
+      <div class="savings-bar-fill" id="savingsBarFill" style="width: 100%">
+        <span id="savingsBarText"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Examples -->
+  <div class="examples-section">
+    <h3>📋 Try These Examples</h3>
+    <div class="examples-grid">
+      <div class="example-card" onclick="loadExample('react')">
+        <strong>⚛️ React Re-render Bug</strong>
+        <p>The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle...</p>
+      </div>
+      <div class="example-card" onclick="loadExample('auth')">
+        <strong>🔐 Auth Middleware Fix</strong>
+        <p>Sure! I'd be happy to help you with that. The issue you're experiencing is most likely caused by your authentication middleware...</p>
+      </div>
+      <div class="example-card" onclick="loadExample('docker')">
+        <strong>🐳 Docker Build Error</strong>
+        <p>I've analyzed your Dockerfile and I can see several issues that might be causing the build failure. Let me walk you through each one...</p>
+      </div>
+      <div class="example-card" onclick="loadExample('git')">
+        <strong>🔀 Git Merge Conflict</strong>
+        <p>Great question! When you encounter a merge conflict in Git, it means that two branches have modified the same lines of a file...</p>
+      </div>
+      <div class="example-card" onclick="loadExample('api')">
+        <strong>🌐 API Rate Limiting</strong>
+        <p>Absolutely! I'd recommend implementing rate limiting using a token bucket algorithm. This approach allows you to control the rate of requests...</p>
+      </div>
+      <div class="example-card" onclick="loadExample('css')">
+        <strong>🎨 CSS Flexbox Help</strong>
+        <p>Of course! The reason your elements aren't centering properly is because you need to set both display: flex and then use justify-content and align-items...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Built by <a href="https://github.com/seanliii" target="_blank">小蓝虾 🦐🔵</a> — an AI agent running on <a href="https://github.com/nicekid1/OpenClaw" target="_blank">OpenClaw</a></p>
+  <p style="margin-top:8px; font-size:12px; color:var(--bone-muted);">No LLM required. Pure client-side caveman logic. Brain still big. Mouth small. 🪨</p>
+</footer>
+
+<div class="toast" id="toast">Copied to clipboard! 🪨</div>
+
+<script>
+// ============================================
+// STATE
+// ============================================
+let currentLevel = 'medium';
+
+const EXAMPLES = {
+  react: "The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle. When you pass an inline object as a prop, React's shallow comparison sees it as a different object every time, which triggers a re-render. I'd recommend using useMemo to memoize the object, or alternatively you could extract the object definition outside of the component. This way, the reference stays stable between renders and React won't trigger unnecessary re-renders of your child components.",
+  auth: "Sure! I'd be happy to help you with that. The issue you're experiencing is most likely caused by your authentication middleware not properly validating the token expiry. When you check the token, you're using a less-than comparison instead of less-than-or-equal, which means tokens that expire at exactly the current timestamp are still considered valid. Let me suggest a fix: change the comparison operator in your validateToken function from < to <=, and also make sure you're comparing timestamps in the same timezone. Additionally, you might want to add a small buffer of about 30 seconds to account for clock skew between your servers.",
+  docker: "I've analyzed your Dockerfile and I can see several issues that might be causing the build failure. Let me walk you through each one carefully. First, you're using a multi-stage build but you're not copying the node_modules from the builder stage correctly. The COPY --from=builder command needs to reference the exact path. Second, your .dockerignore file is missing, which means you're copying unnecessary files like .git and node_modules into the build context, making it extremely slow. Third, you should pin your base image to a specific version instead of using 'latest' to ensure reproducible builds. Here's the corrected Dockerfile with all these fixes applied.",
+  git: "Great question! When you encounter a merge conflict in Git, it means that two branches have modified the same lines of a file and Git can't automatically determine which changes to keep. To resolve this, you'll need to manually edit the conflicted files. Git marks the conflicts with special markers: <<<<<<< shows your changes, ======= separates the two versions, and >>>>>>> shows the incoming changes. After editing, remove the markers, stage the files with git add, and complete the merge with git commit. I'd also recommend using a visual merge tool like VS Code's built-in merge editor, which makes the process much easier and less error-prone.",
+  api: "Absolutely! I'd recommend implementing rate limiting using a token bucket algorithm. This approach allows you to control the rate of requests while still permitting short bursts of traffic. The basic idea is that you have a bucket that fills with tokens at a fixed rate, and each API request consumes one token. If the bucket is empty, the request is rejected with a 429 status code. For implementation, you can use Redis to store the bucket state across multiple server instances. Set two keys per client: one for the token count and one for the last refill timestamp. On each request, calculate how many tokens should have been added since the last refill, add them (up to the max), then try to consume one token.",
+  css: "Of course! The reason your elements aren't centering properly is because you need to set both display: flex and then use justify-content and align-items on the parent container. Here's what's happening: justify-content controls horizontal alignment (along the main axis), while align-items controls vertical alignment (along the cross axis). For perfect centering, set both to 'center'. But there's a catch — the parent container needs to have a defined height for vertical centering to work. If you're trying to center within the viewport, set the parent's height to 100vh. Also, make sure there's no margin or padding on the body element that might be throwing off your calculations."
+};
+
+// ============================================
+// CAVEMAN TRANSLATION RULES
+// ============================================
+const FILLER_PHRASES = [
+  /\b(sure!?\s*)?i'?d be happy to help( you)? with that\.?\s*/gi,
+  /\b(absolutely|of course|great question|certainly|definitely)!?\s*/gi,
+  /\blet me (walk you through|explain|suggest|take a look( at)?)\s*/gi,
+  /\bi've analyzed your\s*/gi,
+  /\bhere'?s? (what'?s? happening|the (thing|issue|problem))\s*:?\s*/gi,
+  /\b(i'?d? )?(also )?(highly )?recommend\s*/gi,
+  /\byou('ll| will)? (need to|want to|should)\s*/gi,
+  /\b(additionally|furthermore|moreover|also|plus)\s*,?\s*/gi,
+  /\bthis (way|approach|method)\s*/gi,
+  /\b(basically|essentially|fundamentally)\s*,?\s*/gi,
+  /\b(in order to|so that you can)\s*/gi,
+  /\b(it'?s? )?(worth (noting|mentioning) that|important to (note|know) that)\s*/gi,
+  /\b(please )?(keep in mind|note|remember) that\s*/gi,
+  /\blet me (know if|suggest)\s*/gi,
+  /\bi can see (that |several )?\s*/gi,
+  /\b(when you|if you)\s*/gi,
+  /\b(here'?s?|here is) (a |the )?(corrected|fixed|updated)?\s*/gi,
+  /\b(the reason|what'?s? happening) (is|here)\s*(is\s*)?(that\s*)?(because\s*)?\s*/gi,
+  /\bmight be causing\s*/gi,
+  /\b(for implementation|for this)\s*,?\s*/gi,
+  /\bbut there'?s? a catch\s*—?\s*/gi,
+  /\bmake sure (that |you )?/gi,
+  /\byou might (also )?want to\s*/gi,
+];
+
+const WORD_REPLACEMENTS = {
+  'extremely': 'very',
+  'significantly': 'much',
+  'approximately': '~',
+  'essentially': '',
+  'functionality': 'feature',
+  'implementation': 'impl',
+  'configuration': 'config',
+  'authentication': 'auth',
+  'authorization': 'authz',
+  'application': 'app',
+  'component': 'comp',
+  'unnecessary': 'unneeded',
+  'automatically': 'auto',
+  'alternatively': 'or',
+  'reproducible': 'stable',
+  'additionally': '',
+  'specifically': '',
+  'particularly': '',
+  'environment': 'env',
+  'performance': 'perf',
+  'development': 'dev',
+  'production': 'prod',
+  'container': 'container',
+  'comparison': 'check',
+  'determines': 'picks',
+  'properly': 'right',
+  'however': 'but',
+  'because': 'cuz',
+  'between': 'btwn',
+  'instead': 'not',
+  'without': 'w/o',
+  'through': 'thru',
+  'multiple': 'many',
+  'different': 'diff',
+  'reference': 'ref',
+  'currently': 'now',
+  'basically': '',
+  'calculate': 'calc',
+  'timestamp': 'ts',
+  'recommend': 'suggest',
+  'encounter': 'hit',
+  'specified': 'set',
+  'incorrect': 'wrong',
+  'determine': 'pick',
+  'utilize': 'use',
+  'whether': 'if',
+  'perhaps': 'maybe',
+};
+
+const EXTREME_REPLACEMENTS = {
+  'function': 'fn',
+  'variable': 'var',
+  'parameter': 'param',
+  'argument': 'arg',
+  'directory': 'dir',
+  'repository': 'repo',
+  'document': 'doc',
+  'something': 'smth',
+  'everything': 'all',
+  'nothing': 'nil',
+  'request': 'req',
+  'response': 'res',
+  'database': 'db',
+  'message': 'msg',
+  'information': 'info',
+  'temporary': 'tmp',
+  'execute': 'run',
+  'process': 'proc',
+  'maximum': 'max',
+  'minimum': 'min',
+};
+
+const OOGA_WORDS = [
+  ['the ', ''],
+  ['that ', ''],
+  ['this ', ''],
+  ['which ', ''],
+  ['with ', 'w/ '],
+  ['your ', 'ur '],
+  ['you are', "u r"],
+  ['have ', 'hav '],
+  ['from ', 'frm '],
+  ['will ', 'wil '],
+  ['would ', 'wud '],
+  ['should ', 'shud '],
+  ['could ', 'cud '],
+  ['. ', '. '],
+  [', and ', '. '],
+  [', which ', '. '],
+  [', but ', '. '],
+];
+
+function cavemanify(text, level) {
+  let result = text;
+
+  // Step 1: Remove filler phrases (all levels)
+  for (const pattern of FILLER_PHRASES) {
+    result = result.replace(pattern, '');
+  }
+
+  // Step 2: Word replacements (all levels)
+  for (const [word, replacement] of Object.entries(WORD_REPLACEMENTS)) {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    result = result.replace(regex, replacement);
+  }
+
+  // Step 3: Extreme replacements
+  if (level === 'extreme' || level === 'ooga') {
+    for (const [word, replacement] of Object.entries(EXTREME_REPLACEMENTS)) {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      result = result.replace(regex, replacement);
+    }
+  }
+
+  // Step 4: Remove sentence starters
+  if (level !== 'mild') {
+    result = result.replace(/^(First|Second|Third|Next|Then|Finally|Lastly),?\s*/gm, '');
+    result = result.replace(/\bFor example,?\s*/gi, 'e.g. ');
+    result = result.replace(/\bIn other words,?\s*/gi, '');
+  }
+
+  // Step 5: OOGA level - maximum compression
+  if (level === 'ooga') {
+    for (const [find, replace] of OOGA_WORDS) {
+      result = result.split(find).join(replace);
+    }
+    // Remove articles aggressively
+    result = result.replace(/\b(a|an)\s+/gi, '');
+  }
+
+  // Clean up
+  result = result.replace(/\s{2,}/g, ' ');           // Multiple spaces
+  result = result.replace(/\.\s*\./g, '.');           // Double periods
+  result = result.replace(/,\s*,/g, ',');             // Double commas
+  result = result.replace(/\s+([.,;:])/g, '$1');      // Space before punctuation
+  result = result.replace(/^\s+/gm, '');              // Leading whitespace
+  result = result.replace(/\n{3,}/g, '\n\n');         // Multiple newlines
+  result = result.replace(/^\s*[.,;:]\s*/gm, '');     // Lines starting with punctuation
+  result = result.trim();
+
+  // Capitalize first letter of each sentence
+  result = result.replace(/(^|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+
+  return result;
+}
+
+// Simple token estimator (~4 chars per token, rough GPT approximation)
+function estimateTokens(text) {
+  if (!text.trim()) return 0;
+  // Simple: split on whitespace + punctuation boundaries
+  const words = text.trim().split(/\s+/);
+  // Rough: 1 word ≈ 1.3 tokens for English
+  return Math.round(words.length * 1.3);
+}
+
+// ============================================
+// UI FUNCTIONS
+// ============================================
+function setLevel(level) {
+  currentLevel = level;
+  document.querySelectorAll('.level').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.level[data-level="${level}"]`).classList.add('active');
+
+  // Re-translate if there's text
+  const input = document.getElementById('inputText').value;
+  if (input.trim()) translate();
+}
+
+function translate() {
+  const input = document.getElementById('inputText').value;
+  if (!input.trim()) return;
+
+  const btn = document.getElementById('translateBtn');
+  btn.classList.add('processing');
+  btn.innerHTML = '🪨 CAVEMAN THINKING...';
+
+  setTimeout(() => {
+    const output = cavemanify(input, currentLevel);
+    const inputTokens = estimateTokens(input);
+    const outputTokens = estimateTokens(output);
+    const savings = inputTokens > 0 ? Math.round((1 - outputTokens / inputTokens) * 100) : 0;
+
+    // Update output
+    const outputEl = document.getElementById('outputText');
+    outputEl.textContent = output;
+    outputEl.classList.remove('empty');
+
+    // Update stats
+    document.getElementById('originalTokens').textContent = inputTokens;
+    document.getElementById('cavemanTokens').textContent = outputTokens;
+    document.getElementById('savingsPercent').textContent = savings + '%';
+    document.getElementById('inputTokenCount').textContent = inputTokens + ' tokens';
+    document.getElementById('outputTokenCount').textContent = outputTokens + ' tokens';
+
+    // Update savings bar
+    const barWidth = Math.max(5, 100 - savings);
+    document.getElementById('savingsBarFill').style.width = barWidth + '%';
+    document.getElementById('savingsBarText').textContent = savings + '% saved';
+    document.getElementById('savingsLabel').textContent = `${savings}% tokens saved · ${inputTokens - outputTokens} tokens eliminated`;
+
+    btn.classList.remove('processing');
+    btn.innerHTML = '🪨 MAKE CAVEMAN';
+  }, 300);
+}
+
+function loadExample(key) {
+  document.getElementById('inputText').value = EXAMPLES[key];
+  translate();
+  document.getElementById('inputText').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function copyOutput() {
+  const output = document.getElementById('outputText').textContent;
+  if (!output || output === 'Caveman wait for words... 🪨') return;
+  navigator.clipboard.writeText(output).then(() => {
+    showToast('Copied to clipboard! 🪨');
+  });
+}
+
+function clearAll() {
+  document.getElementById('inputText').value = '';
+  const outputEl = document.getElementById('outputText');
+  outputEl.textContent = 'Caveman wait for words... 🪨';
+  outputEl.classList.add('empty');
+  document.getElementById('originalTokens').textContent = '0';
+  document.getElementById('cavemanTokens').textContent = '0';
+  document.getElementById('savingsPercent').textContent = '0%';
+  document.getElementById('inputTokenCount').textContent = '0 tokens';
+  document.getElementById('outputTokenCount').textContent = '0 tokens';
+  document.getElementById('savingsBarFill').style.width = '100%';
+  document.getElementById('savingsBarText').textContent = '';
+  document.getElementById('savingsLabel').textContent = 'Paste text to see savings';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// Live translate on input (debounced)
+let debounceTimer;
+document.getElementById('inputText').addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const input = document.getElementById('inputText').value;
+    if (input.trim()) translate();
+    else clearAll();
+  }, 500);
+});
+</script>
+
+</body>
+</html>
